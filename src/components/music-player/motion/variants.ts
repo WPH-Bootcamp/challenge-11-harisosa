@@ -53,7 +53,10 @@ export const progressFillVariants: Variants = {
    EQUALIZER BAR ANIMATE (by state)
 ========================= */
 export const resolveEqualizerAnimate = (state: PlayerState) => {
-  if (state === "playing") return { height: ["20%", "100%"] };
+  if (state === "playing") {
+    return { height: ["20%", "100%"] };
+  }
+
   if (state === "loading") return { height: "50%" };
   return { height: "20%" };
 };

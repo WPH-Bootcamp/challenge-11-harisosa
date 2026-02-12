@@ -33,16 +33,14 @@ export const VolumeSlider: React.FC<VolumeSliderProps> = ({
   return (
     <div
       className={[
-        "mt-5.5 flex items-center gap-3",
+        "mt-5 flex items-center gap-3",
         disabled && "opacity-50 pointer-events-none",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
     >
-
       <Volume2 size={16} className="text-white/40 shrink-0" />
-
 
       <div
         ref={trackRef}
@@ -56,15 +54,19 @@ export const VolumeSlider: React.FC<VolumeSliderProps> = ({
           const next = getValueFromClientX(e.clientX);
           if (next !== null) onChange(next);
         }}
-        className="relative h-1.5 flex-1 rounded-full bg-white/10 overflow-hidden cursor-pointer"
+        className="group relative h-1.5 flex-1 rounded-full bg-white/10 overflow-hidden cursor-pointer"
       >
-
         <motion.div
-          className="h-full bg-white/35"
-          animate={{ width: `${percent}%` }}
+          className="h-full"
+          animate={{
+            width: `${percent}%`,
+            backgroundColor: "#717680",
+          }}
+          whileHover={{
+            backgroundColor: "#a855f7",
+          }}
           transition={{ duration: 0.2 }}
         />
-
       </div>
     </div>
   );

@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { progressFillVariants, type PlayerState } from "../motion/variants";
 
 type Props = {
   state: PlayerState;
   totalMs: number;
+  elapsedMs: number;
   onComplete?: () => void;
-  tickMs?: number;
 };
 
 const formatTimeFromMs = (ms: number) => {
@@ -21,81 +21,50 @@ const formatTimeFromMs = (ms: number) => {
 export const PlaybackProgress: React.FC<Props> = ({
   state,
   totalMs,
+  elapsedMs,
   onComplete,
-  tickMs = 100,
 }) => {
-  const resolvedTotalMs = useMemo(() => Math.max(0, Math.floor(totalMs)), [totalMs]);
+  const resolvedTotalMs = useMemo(
+    () => Math.max(0, Math.floor(totalMs)),
+    [totalMs]
+  );
 
-  const [elapsedMs, setElapsedMs] = useState(0);
+  const progress =
+    resolvedTotalMs === 0 ? 0 : Math.min(1, elapsedMs / resolvedTotalMs);
+
   const [didComplete, setDidComplete] = useState(false);
 
-  const intervalRef = useRef<number | null>(null);
-
   useEffect(() => {
-    if (state !== "playing") setDidComplete(false);
-  }, [state]);
-
-  useEffect(() => {
-    setElapsedMs((prev) => Math.min(prev, resolvedTotalMs));
-  }, [resolvedTotalMs]);
-
-  useEffect(() => {
-    if (intervalRef.current) {
-      window.clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (state !== "playing") {
+      setDidComplete(false);
+      return;
     }
 
-    if (state === "playing" && resolvedTotalMs > 0) {
-      intervalRef.current = window.setInterval(() => {
-        setElapsedMs((prev) => {
-          const next = prev + tickMs;
-          if (next >= resolvedTotalMs) {
-            return resolvedTotalMs;
-          }
-          return next;
-        });
-      }, tickMs);
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [state, resolvedTotalMs, tickMs]);
-
-  useEffect(() => {
-    if (state !== "playing") return;
-    if (resolvedTotalMs === 0) return;
-
-    if (elapsedMs >= resolvedTotalMs && !didComplete) {
+    if (progress >= 1 && !didComplete) {
       setDidComplete(true);
+      onComplete?.();
     }
-  }, [elapsedMs, resolvedTotalMs, state, didComplete]);
-
-
-  useEffect(() => {
-    if (!didComplete) return;
-    onComplete?.();
-  }, [didComplete, onComplete]);
-
-  const progress = resolvedTotalMs === 0 ? 0 : elapsedMs / resolvedTotalMs;
-  const width = useMemo(() => `${Math.round(progress * 100)}%`, [progress]);
+  }, [progress, state, didComplete, onComplete]);
 
   return (
     <div>
       <div className="mt-5 h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
         <motion.div
-          className="h-full"
-          animate={state}
+          className="h-full origin-left"
           variants={progressFillVariants}
-          transition={{ duration: 0.3 }}
-          style={{ width }}
+          animate={{
+            ...progressFillVariants[state],
+            scaleX: progress,
+          }}
+          transition={{
+            scaleX: { duration: 0.1, ease: "linear" },
+            backgroundColor: { duration: 0.3 },
+            opacity: { duration: 0.3 },
+          }}
         />
       </div>
 
-      <div className="mt-3 flex justify-between text-[12px] text-white/40">
+      <div className="mt-5 flex justify-between text-xs text-white/40">
         <span>{formatTimeFromMs(elapsedMs)}</span>
         <span>{formatTimeFromMs(resolvedTotalMs)}</span>
       </div>

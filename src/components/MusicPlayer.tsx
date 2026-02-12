@@ -1,142 +1,288 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { Volume2 } from "lucide-react";
-
 import {
   containerVariants,
-  PlayerState
+  PlayerState,
 } from "@/components/music-player/motion/variants";
-import { AlbumArt } from "@/components/music-player/ui/AlbumArt";
-import { Equalizer } from "@/components/music-player/ui/Equalizer";
-import { MainButton } from "@/components/music-player/ui/MainButton";
-import { PlaybackProgress } from "@/components/music-player/ui/PlaybackProgress";
-import { VolumeSlider } from "@/components/music-player/ui/VolumeSlider";
+import {
+  RepeatMode,
+  usePlaylistControls,
+} from "@/components/music-player/hook/usePlaylistControls";
+import { Track } from "@/components/music-player/type";
+import { AlbumArt, Equalizer, PlaybackProgress, MainButton, VolumeSlider } from "@/components/music-player/ui";
 
-const LOADING_MS = 1_000;;
-const MIN_PLAY_MS = 15_000;
+const SWITCH_LOADING_MS = 1000;
+const PLAY_TOGGLE_LOADING_MS = 500;
+
+// Audio is for demo purpose only
+const PLAYLIST: Track[] = [
+  { id: "t1", title: "Your Man", artist: "Josh Turner", src: "/audio/Yourman.mp3" },
+  { id: "t2", title: "I Started a Joke", artist: "Bee Gees", src: "/audio/i-started-a-joke.mp3" },
+  { id: "t3", title: "Love of My Life", artist: "Queen", src: "/audio/love-of-my-life.mp3" },
+  { id: "t4", title: "Overjoyed", artist: "Stevie Wonder", src: "/audio/overjoyed.mp3"  },
+  { id: "t5", title: "Africa", artist: "Toto", src: "/audio/africa.mp3"},
+  { id: "t6", title: "Heaven Knows", artist: "Rick Price", src: '/audio/heaven-knows.mp3' },
+  { id: "t7", title: "Just the Way You Are", artist: "Billy Joel", src: '/audio/just-the-way-you-are.mp3' },
+  { id: "t8", title: "Glory of Love", artist: "Peter Cetera", src: '/audio/glory-of-love.mp3' },
+  { id: "t9", title: "You're The Inspiration", artist: "Chicago", src:'/audio/youre-the-inspiration.mp3' },
+  { id: "t10", title: "Against All Odds (Take a Look at Me Now)", artist: "Phil Collins", src: '/audio/against-all-odds.mp3' },
+];
 
 const MusicPlayer: React.FC = () => {
   const [state, setState] = useState<PlayerState>("paused");
-  const loadingTimerRef = useRef<number | null>(null);
-  const playLockTimerRef = useRef<number | null>(null);
-  const [isPlayLocked, setIsPlayLocked] = useState(false);
-  const [trackKey, setTrackKey] = useState(0);
-  const [volume, setVolume] = useState(0.6);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const toggle = () => {
-    if (state === "loading") return;
+  const [tracks] = useState<Track[]>(PLAYLIST);
+  const [trackIndex, setTrackIndex] = useState(0);
+  const [trackKey, setTrackKey] = useState(0);
 
-    if (state === "playing") {
-      // clear semua timer
-      if (loadingTimerRef.current) window.clearTimeout(loadingTimerRef.current);
-      if (playLockTimerRef.current) window.clearTimeout(playLockTimerRef.current);
+  const [isShuffle, setIsShuffle] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
 
-      setIsPlayLocked(false);
-      setState("paused");
-      return;
+  const [volume, setVolume] = useState(0.6);
+
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [totalMs, setTotalMs] = useState(PLAYLIST[0]?.durationMs ?? 180000);
+
+  const switchTimerRef = useRef<number | null>(null);
+
+  const playToggleTimerRef = useRef<number | null>(null);
+
+  const clearSwitchTimer = () => {
+    if (switchTimerRef.current !== null) {
+      window.clearTimeout(switchTimerRef.current);
+      switchTimerRef.current = null;
     }
+  };
 
-    if (state === "paused") {
-      setState("loading");
-
-      if (loadingTimerRef.current) window.clearTimeout(loadingTimerRef.current);
-      if (playLockTimerRef.current) window.clearTimeout(playLockTimerRef.current);
-
-      loadingTimerRef.current = window.setTimeout(() => {
-        setState("playing");
-
-        setIsPlayLocked(true);
-        playLockTimerRef.current = window.setTimeout(() => {
-          setIsPlayLocked(false);
-        }, MIN_PLAY_MS);
-      }, LOADING_MS);
+  const clearPlayToggleTimer = () => {
+    if (playToggleTimerRef.current !== null) {
+      window.clearTimeout(playToggleTimerRef.current);
+      playToggleTimerRef.current = null;
     }
   };
 
   useEffect(() => {
     return () => {
-      if (loadingTimerRef.current) window.clearTimeout(loadingTimerRef.current);
-      if (playLockTimerRef.current) window.clearTimeout(playLockTimerRef.current);
+      clearSwitchTimer();
+      clearPlayToggleTimer();
     };
   }, []);
 
+  const controls = usePlaylistControls({
+    tracks,
+    index: trackIndex,
+    isShuffle,
+    repeatMode,
+    setIndex: setTrackIndex,
+    setTrackKey,
+    setIsShuffle,
+    setRepeatMode,
+  });
+
+  const currentTrack = useMemo(() => controls.currentTrack, [controls.currentTrack]);
+  const isLoading = state === "loading";
+
+  const handleVolumeChange = (v: number) => {
+    const audio = audioRef.current;
+    if (audio) audio.volume = v;
+    setVolume(v);
+  };
+
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    setElapsedMs(0);
+
+    if (!currentTrack?.src) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+      setTotalMs(currentTrack?.durationMs ?? 180000);
+      return;
     }
+
+    audio.src = currentTrack.src;
+    audio.load();
+    audio.currentTime = 0;
+
+    audio.volume = volume;
+
+    if (state === "playing") {
+      audio.play().catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack?.src]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (state === "playing") {
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+  }, [state]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = volume;
   }, [volume]);
 
-  const isLoading = state === "loading";
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    let raf = 0;
+
+    const tick = () => {
+      setElapsedMs(Math.floor(audio.currentTime * 1000));
+      raf = requestAnimationFrame(tick);
+    };
+
+    const handleLoadedMeta = () => {
+      const d = Number.isFinite(audio.duration) ? audio.duration : 0;
+      if (d > 0) setTotalMs(Math.floor(d * 1000));
+      else setTotalMs(currentTrack?.durationMs ?? 180000);
+    };
+
+    const handleEnded = () => {
+      setElapsedMs(0);
+      handleProgressComplete();
+    };
+
+    audio.addEventListener("loadedmetadata", handleLoadedMeta);
+    audio.addEventListener("ended", handleEnded);
+
+    if (state === "playing") {
+      raf = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      audio.removeEventListener("loadedmetadata", handleLoadedMeta);
+      audio.removeEventListener("ended", handleEnded);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [state, currentTrack?.src]);
+
+  const togglePlay = () => {
+    if (state === "loading") return;
+
+    clearPlayToggleTimer();
+    const next: PlayerState = state === "playing" ? "paused" : "playing";
+    setState("loading");
+    audioRef.current?.pause();
+
+    playToggleTimerRef.current = window.setTimeout(() => {
+      setState(next);
+      playToggleTimerRef.current = null;
+    }, PLAY_TOGGLE_LOADING_MS);
+  };
+
+  const runTrackSwitch = (action: () => void) => {
+    if (state === "loading") return;
+
+    const wasPlaying = state === "playing";
+
+    clearSwitchTimer();
+    setState("loading");
+
+    audioRef.current?.pause();
+
+    switchTimerRef.current = window.setTimeout(() => {
+      action();
+      setState(wasPlaying ? "playing" : "paused");
+      switchTimerRef.current = null;
+    }, SWITCH_LOADING_MS);
+  };
+
+  const onNext = () =>
+    runTrackSwitch(() => {
+      const res = controls.goNext();
+      if (res.atEnd && repeatMode === "off") {
+        setState("paused");
+      }
+    });
+
+  const onPrev = () => runTrackSwitch(() => controls.goPrev());
+
+  const onRestart = () => runTrackSwitch(() => controls.restartTrack());
 
   const handleProgressComplete = () => {
     if (state !== "playing") return;
 
-    setState("loading");
+    if (repeatMode === "one") {
+      onRestart();
+      return;
+    }
 
-    if (loadingTimerRef.current) window.clearTimeout(loadingTimerRef.current);
-    if (playLockTimerRef.current) window.clearTimeout(playLockTimerRef.current);
-
-    loadingTimerRef.current = window.setTimeout(() => {
-
-      setTrackKey((k) => k + 1);
-
-      setState("playing");
-
-      setIsPlayLocked(true);
-      playLockTimerRef.current = window.setTimeout(() => {
-        setIsPlayLocked(false);
-      }, MIN_PLAY_MS);
-    }, LOADING_MS);
+    onNext();
   };
 
-
   return (
-    <div className="min-h-screen grid place-items-center bg-[#0a0a0a]">
-      <motion.div
-        className="min-w-125 rounded-3xl px-8 py-7"
-        variants={containerVariants}
-        animate={state}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="flex items-start gap-6">
-          <AlbumArt state={state} />
+    <>
+      <div className="grid place-items-center bg-[#0a0a0a]">
+        <motion.div
+          className="w-125 h-89.5  rounded-3xl p-4"
+          variants={containerVariants}
+          animate={state}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex items-start gap-6">
+            <AlbumArt state={state} />
 
-          <div className="flex-1">
-            <div className="flex items-center gap-6">
-              <div className="min-w-0">
-                <div className="text-[20px] font-semibold text-white truncate">
-                  Awesome Song Title
-                </div>
-                <div className="mt-2 text-[14px] text-white/60 truncate">
-                  Amazing Artist
+            <div className="flex-1 mt-6.5">
+              <div className="flex items-center gap-6">
+                <div className="min-w-0">
+                  <div className="text-lg font-semibold text-white truncate">
+                    {currentTrack?.title ?? "—"}
+                  </div>
+                  <div className="mt-2 text-sm text-white/60 truncate">
+                    {currentTrack?.artist ?? "—"}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="shrink-0 mt-4">
-              <Equalizer state={state} bars={5} />
+
+              <div className="shrink-0 mt-4">
+                <Equalizer state={state} bars={5} />
+              </div>
             </div>
           </div>
 
-        </div>
+          <PlaybackProgress
+            key={trackKey}
+            state={state}
+            totalMs={totalMs}
+            elapsedMs={elapsedMs}
+            onComplete={handleProgressComplete}
+          />
 
+          <div className="mt-5 flex items-center justify-center gap-4.5">
+            <MainButton
+              isLoading={isLoading}
+              state={state}
+              isShuffle={isShuffle}
+              repeatMode={repeatMode}
+              onTogglePlay={togglePlay}
+              onNext={onNext}
+              onPrev={onPrev}
+              onToggleShuffle={controls.toggleShuffle}
+              onCycleRepeat={controls.cycleRepeat}
+            />
+          </div>
 
-        <PlaybackProgress
-          key={trackKey}
-          state={state} totalMs={MIN_PLAY_MS} onComplete={handleProgressComplete} />
-        <div className="mt-7 flex items-center justify-center gap-4.5">
-          <MainButton state={state} isLoading={isLoading} toggle={toggle} />
-        </div>
+          <VolumeSlider value={volume} onChange={handleVolumeChange} disabled={isLoading} />
+        </motion.div>
+      </div>
 
-        <VolumeSlider
-          value={volume}
-          onChange={setVolume}
-          disabled={isLoading}
-        />
-      </motion.div>
-    </div>
+      <audio ref={audioRef} preload="auto" />
+    </>
   );
 };
 

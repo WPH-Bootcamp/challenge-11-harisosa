@@ -27,14 +27,14 @@ export const Equalizer: React.FC<Props> = ({ state, bars = 5 }) => {
       {Array.from({ length: bars }).map((_, i) => (
         <motion.div
           key={i}
-          className="w-1 bg-(--equalizer-active)"
+          className="w-2 bg-(--equalizer-active)"
           animate={resolveEqualizerAnimate(state)}
           transition={{
             duration: isPlaying ? 0.5 : 0.3,
             ease: "easeInOut",
             repeat: isPlaying ? Infinity : 0,
             repeatType: "reverse",
-            delay: i * 0.1,
+            delay: isPlaying ? i * 0.1 : 0,
           }}
           style={{ willChange: "height" }}
         />

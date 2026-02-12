@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { motion } from "motion/react";
 import { albumVariants, type PlayerState } from "../motion/variants";
 import { Music } from "lucide-react";
+import Image from "next/image";
 
 type Props = {
   state: PlayerState;
@@ -30,7 +31,11 @@ export const AlbumArt: React.FC<Props> = ({ state }) => {
                  bg-gradient-to-br from-fuchsia-600 to-pink-500"
       variants={albumVariants}
       animate={state}
-      transition={{ type: "spring", duration: 0.3 }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 25,
+      }}
       style={{
         willChange: "transform, filter",
         ...dimStyle,
@@ -46,7 +51,7 @@ export const AlbumArt: React.FC<Props> = ({ state }) => {
         }
         style={{ willChange: "transform" }}
       >
-        <Music className="w-12 h-15  text-black" />
+        <Image src='/images/album-art.png' width={48} height={60} alt='album-art' />
       </motion.div>
     </motion.div>
   );
