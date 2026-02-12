@@ -3,9 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  
-  /* Design System Colors - Tambahkan warna sesuai kebutuhan dari Figma */
-  /* Contoh struktur warna yang bisa digunakan */
+
+  /* Base palette */
   --color-purple-500: #a855f7;
   --color-purple-600: #9333ea;
   --color-gray-100: #f3f4f6;
@@ -13,6 +12,27 @@
   --color-gray-500: #6b7280;
   --color-gray-600: #4b5563;
   --color-gray-900: #111827;
+
+  /* ===============================
+     Music Player Tokens
+  =============================== */
+
+  /* Card background per state */
+  --player-bg-paused: #0F0F0F;
+  --player-bg-loading: #0F0F0F;
+  --player-bg-playing: #1A1A1A;
+
+  /* Glow */
+  --player-glow: 0 0 80px #8B5CF64D;
+
+  /* Progress bar */
+  --progress-paused: #717680;
+  --progress-loading: #717680;
+  --progress-playing: #8B5CF6;
+
+  /* Equalizer */
+  --equalizer-active: #8B5CF6;
+  --equalizer-muted: #8B5CF6;
 }
 
 @theme inline {
@@ -24,6 +44,77 @@
   /* Custom spacing dengan 1px ratio (1:1 bukan 1:4) */
   /* p-1 = 1px, p-4 = 4px, p-16 = 16px */
   /* Spacing sudah dikonfigurasi di tailwind.config.ts */
+}
+
+@theme {
+/* Font Family */
+/* Text Sizes and Line Heights */
+--text-display-3xl: 3.75rem;
+--text-display-3xl--line-height: 4.5rem;
+--text-display-2xl: 3rem;
+--text-display-2xl--line-height: 3.75rem;
+--text-display-2xl--letter-spacing: -2%;
+--text-display-xl: 2.5rem;
+--text-display-xl--line-height: 3rem;
+--text-display-xl--letter-spacing: -2%;
+--text-display-lg: 2.25rem;
+--text-display-lg--line-height: 2.75rem;
+--text-display-lg--letter-spacing: -2%;
+--text-display-md: 2rem;
+--text-display-md--line-height: 2.5rem;
+--text-display-sm: 1.75rem;
+--text-display-sm--line-height: 2.375rem;
+--text-display-xs: 1.5rem;
+--text-display-xs--line-height: 2.25rem;
+--text-xl: 1.25rem;
+--text-xl--line-height: 2.125rem;
+--text-lg: 1.125rem;
+--text-lg--line-height: 2rem;
+--text-md: 1rem;
+--text-md--line-height: 1.875rem;
+--text-sm: 0.875rem;
+--text-sm--line-height: 1.75rem;
+--text-xs: 0.75rem;
+--text-xs--line-height: 1.5rem;
+
+/* Font Weights */
+--font-weight-regular: 400;
+--font-weight-medium: 500;
+--font-weight-semibold: 600;
+--font-weight-bold: 700;
+--font-weight-extrabold: 800;
+
+/* Color Theme */
+--color-neutral-25: #FDFDFD;
+--color-neutral-50: #FAFAFA;
+--color-neutral-100: #F5F5F5;
+--color-neutral-200: #E9EAEB;
+--color-neutral-300: #D5D7DA;
+--color-neutral-400: #A4A7AE;
+--color-neutral-500: #717680;
+--color-neutral-600: #535862;
+--color-neutral-700: #414651;
+--color-neutral-800: #252B37;
+--color-neutral-900: #181D27;
+--color-neutral-950: #0A0D12;
+--color-primary-100: #E5F4FB;
+--color-primary-200: #6FCFFF;
+--color-primary-300: #0093DD;
+--color-primary-400: #050A1B;
+--color-base-white: #FFFFFF;
+--color-base-background: #0C0D0D;
+
+/* Radius */
+--radius-xxs: 0.125rem;
+--radius-xs: 0.25rem;
+--radius-sm: 0.375rem;
+--radius-md: 0.5rem;
+--radius-lg: 0.625rem;
+--radius-xl: 0.75rem;
+--radius-2xl: 1rem;
+--radius-3xl: 1.25rem;
+--radius-4xl: 1.5rem;
+
 }
 
 @media (prefers-color-scheme: dark) {
